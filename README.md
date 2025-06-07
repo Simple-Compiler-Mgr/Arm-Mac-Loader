@@ -1,11 +1,42 @@
-# ARM64 Bootloader for Apple Silicon Macs
+# ARM64 Bootloader for Apple Silicon Macs / 适用于 Apple Silicon Mac 的 ARM64 引导程序
 
-[English](#english) | [中文](#chinese)
+[English](#english) | [中文](#chinese-1)
+
+---
 
 ## English
 
 ### Overview
-This project implements a custom ARM64 bootloader for Apple Silicon Macs, designed to load and boot Android systems using m1n1 or iBoot as a preloader.
+This project is a custom ARM64 bootloader for Apple Silicon Macs, designed to load and boot Android systems using m1n1 or iBoot as a preloader. It provides a minimal, extensible, and highly portable boot environment for ARM64 platforms.
+
+#### Android Boot Process
+1. **Preloader Stage (m1n1/iBoot)**
+   - Initializes Apple Silicon hardware
+   - Sets up secure boot environment
+   - Loads our custom bootloader
+
+2. **Custom Bootloader Stage**
+   - Parses Android boot image (boot.img)
+   - Sets up memory layout for Android
+   - Initializes hardware for Android
+   - Loads Android kernel, ramdisk, and device tree
+   - Transfers control to Android kernel
+
+3. **Android Boot Stage**
+   - Android kernel initialization
+   - Ramdisk mounting
+   - Android system startup
+   - Android runtime initialization
+
+#### Supported Android Features
+- Standard Android boot image format
+- Custom kernel loading
+- Ramdisk support
+- Device tree (DTB) support
+- Android boot parameters
+- Android recovery mode
+- Android fastboot mode
+
 
 ### Technical Architecture
 
@@ -189,13 +220,79 @@ int load_kernel(void);
 4. Push to branch
 5. Create pull request
 
-### License
-MIT License
+
+---
 
 ## 中文
 
 ### 概述
-本项目为 Apple Silicon Mac 实现了一个自定义的 ARM64 引导程序，设计用于使用 m1n1 或 iBoot 作为预加载器来加载和启动 Android 系统。
+本项目为 Apple Silicon Mac 设计了一个自定义 ARM64 引导程序，可通过 m1n1 或 iBoot 作为预加载器加载并启动 Android 系统。它提供了极简、可扩展、高度可移植的 ARM64 启动环境。
+
+#### Android 启动流程
+1. **预加载器阶段（m1n1/iBoot）**
+   - 初始化 Apple Silicon 硬件
+   - 设置安全启动环境
+   - 加载我们的自定义引导程序
+
+2. **自定义引导程序阶段**
+   - 解析 Android 启动镜像（boot.img）
+   - 设置 Android 内存布局
+   - 初始化 Android 所需硬件
+   - 加载 Android 内核、ramdisk 和设备树
+   - 跳转到 Android 内核
+
+3. **Android 启动阶段**
+   - Android 内核初始化
+   - Ramdisk 挂载
+   - Android 系统启动
+   - Android 运行时初始化
+
+#### 支持的 Android 功能
+- 标准 Android 启动镜像格式
+- 自定义内核加载
+- Ramdisk 支持
+- 设备树（DTB）支持
+- Android 启动参数
+- Android 恢复模式
+- Android 快速启动模式
+
+#### Android 系统要求
+- Android 版本：Android 11 或更高
+- 内核版本：4.19 或更高
+- 设备树：支持 ARM64 架构
+- 文件系统：ext4/f2fs
+- 分区布局：标准 Android 分区表
+
+#### Android 启动参数
+```bash
+# 基本启动参数
+androidboot.hardware=apple
+androidboot.serialno=XXXXXXXX
+androidboot.mode=normal
+androidboot.bootloader=1.0.0
+
+# 调试参数
+androidboot.debuggable=1
+androidboot.console=ttyS0
+androidboot.logcat=v
+```
+
+#### Android 设备树要求
+```dts
+/ {
+    compatible = "apple,arm64";
+    model = "Apple Silicon Mac";
+    
+    memory {
+        device_type = "memory";
+        reg = <0x0 0x80000000 0x0 0x40000000>;
+    };
+    
+    chosen {
+        bootargs = "console=ttyS0,115200 androidboot.hardware=apple";
+    };
+};
+```
 
 ### 技术架构
 
