@@ -1,28 +1,26 @@
- ENTRY(_start)
+ENTRY(_start)
 
 SECTIONS
 {
-    . = 0x800000000;  /* 8GB 处开始 */
+    . = 0x40080000;
 
     .text : {
+        *(.text.boot)
         *(.text)
     }
 
-    .rodata : {
-        *(.rodata)
-    }
-
-    .data : {
-        *(.data)
-    }
-
+    .rodata : { *(.rodata) }
+    .data : { *(.data) }
     .bss : {
+        . = ALIGN(16);
+        __bss_start = .;
         *(.bss)
+        *(COMMON)
+        __bss_end = .;
     }
 
-    /* 栈从 9GB 处开始向下增长 */
-    . = 0x900000000;
-    .stack : {
-        . = . + 0x1000000;  /* 16MB 栈空间 */
-    }
+    . = ALIGN(4096);
+    _stack_bot = .;
+    . += 0x10000;  /* 64KB 栈空间 */
+    _stack_top = .;
 }

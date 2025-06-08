@@ -1,78 +1,99 @@
 #include "loader.h"
-#include "bootimg.h"
-#include "jump.h"
 #include "utils.h"
+#include "dtb.h"
+#include "debug.h"
 #include "stdint.h"
 #include "stddef.h"
 
-// 加载并启动内核
-int load_kernel(void) {
-    struct boot_img_hdr header;
-    uint8_t *kernel = NULL;
-    uint8_t *ramdisk = NULL;
-    uint8_t *dtb = NULL;
-    uint32_t kernel_size = 0;
-    uint32_t ramdisk_size = 0;
-    uint32_t dtb_size = 0;
+// 加载设备树
+int load_dtb(void) {
+    debug_print("Loading device tree...");
     
-    debug_print("Loading boot.img from 0x%x", BOOT_IMG_ADDR);
-    
-    // 从内存中读取 boot.img
-    uint8_t *boot_img = (uint8_t *)BOOT_IMG_ADDR;
-    
-    // 解析 boot.img
-    debug_print("Parsing boot.img header...");
-    if (parse_bootimg(boot_img, &header) != 0) {
-        debug_print("Failed to parse boot.img header!");
+    // 加载基础设备树
+    if (dtb_load("dtb/apple_silicon.dtb") != 0) {
+        debug_print("Failed to load base device tree!");
         return -1;
     }
     
-    debug_print("Boot.img version: %d", header.header_version);
-    debug_print("Kernel size: %d bytes", header.kernel_size);
-    debug_print("Ramdisk size: %d bytes", header.ramdisk_size);
-    debug_print("DTB size: %d bytes", header.dtb_size);
-    
-    // 提取内核
-    debug_print("Extracting kernel...");
-    if (extract_kernel_from_bootimg(boot_img, &kernel, &kernel_size) != 0) {
-        debug_print("Failed to extract kernel!");
+    // 设置设备树属性
+    const char *bootargs = "console=ttyS0,115200 androidboot.hardware=apple androidboot.mode=normal";
+    if (dtb_set_property("/chosen", "bootargs", bootargs, strlen(bootargs) + 1) < 0) {
+        debug_print("Failed to set bootargs!");
         return -1;
     }
     
-    // 提取 ramdisk
-    debug_print("Extracting ramdisk...");
-    if (extract_ramdisk_from_bootimg(boot_img, &ramdisk, &ramdisk_size) != 0) {
-        debug_print("Failed to extract ramdisk!");
-        return -1;
-    }
-    
-    // 提取 dtb
-    debug_print("Extracting DTB...");
-    if (extract_dtb_from_bootimg(boot_img, &dtb, &dtb_size) != 0) {
-        debug_print("Failed to extract DTB!");
-        return -1;
-    }
-    
-    // 将内核复制到目标地址
-    debug_print("Copying kernel to 0x%x", header.kernel_addr);
-    memcpy((void *)(uintptr_t)header.kernel_addr, kernel, kernel_size);
-    
-    // 将 ramdisk 复制到目标地址（如果有）
-    if (ramdisk_size > 0) {
-        debug_print("Copying ramdisk to 0x%x", header.ramdisk_addr);
-        memcpy((void *)(uintptr_t)header.ramdisk_addr, ramdisk, ramdisk_size);
-    }
-    
-    // 将 dtb 复制到目标地址（如果有）
-    if (dtb_size > 0) {
-        debug_print("Copying DTB to 0x%x", header.dtb_addr);
-        memcpy((void *)(uintptr_t)header.dtb_addr, dtb, dtb_size);
-    }
-    
-    debug_print("Jumping to kernel at 0x%x", header.kernel_addr);
-    
-    // 跳转到内核
-    jump_to_kernel(header.kernel_addr, header.dtb_addr, header.ramdisk_addr);
-    
+    debug_print("Device tree loaded successfully");
     return 0;
+}
+
+// 加载内核
+int load_kernel(void) {
+    debug_print("Loading kernel...");
+    
+    // 从内存中读取内核
+    void *kernel = (void *)KERNEL_ADDR;
+    
+    // 验证内核魔数
+    if (*(uint32_t *)kernel != 0x644d5241) { // ARM64 魔数
+        debug_print("Invalid kernel!");
+        return -1;
+    }
+    
+    debug_print("Kernel loaded successfully");
+    return 0;
+}
+
+// 加载 ramdisk
+int load_ramdisk(void) {
+    debug_print("Loading ramdisk...");
+    
+    // 从内存中读取 ramdisk
+    void *ramdisk = (void *)RAMDISK_ADDR;
+    
+    // 验证 ramdisk 大小
+    uint32_t size = *(uint32_t *)ramdisk;
+    if (size > RAMDISK_SIZE) {
+        debug_print("Ramdisk too large!");
+        return -1;
+    }
+    
+    debug_print("Ramdisk loaded successfully");
+    return 0;
+}
+
+// 主加载函数
+int loader_main(void) {
+    debug_print("Starting bootloader...");
+    
+    // 1. 加载设备树
+    if (load_dtb() != 0) {
+        debug_print("Failed to load device tree!");
+        return -1;
+    }
+    
+    // 2. 加载内核
+    if (load_kernel() != 0) {
+        debug_print("Failed to load kernel!");
+        return -1;
+    }
+    
+    // 3. 加载 ramdisk
+    if (load_ramdisk() != 0) {
+        debug_print("Failed to load ramdisk!");
+        return -1;
+    }
+    
+    // 4. 准备启动参数
+    struct boot_params params;
+    params.dtb_addr = DTB_ADDR;
+    params.kernel_addr = KERNEL_ADDR;
+    params.ramdisk_addr = RAMDISK_ADDR;
+    params.ramdisk_size = RAMDISK_SIZE;
+    
+    // 5. 跳转到内核
+    debug_print("Jumping to kernel...");
+    jump_to_kernel(&params);
+    
+    // 不应该到达这里
+    return -1;
 }

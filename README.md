@@ -475,3 +475,208 @@ int load_kernel(void);
 3. 提交更改
 4. 推送到分支
 5. 创建拉取请求
+[English](#english) | [中文](#chinese-1)
+
+---
+
+## English
+
+### Overview
+This project is a custom ARM64 bootloader for Apple Silicon Macs, designed to load and boot Android systems using m1n1 or iBoot as a preloader. It provides a minimal, extensible, and highly portable boot environment for ARM64 platforms.
+
+### Latest Development Status
+- [x] Basic UART driver implementation
+- [x] Initial boot sequence setup
+- [x] Memory management framework
+- [ ] Android boot image support
+- [ ] Device tree handling
+- [ ] Kernel loading
+- [ ] Ramdisk support
+
+### Project Structure
+```
+.
+├── m1n1/                # m1n1 preloader integration
+│   ├── src/            # Source code
+│   │   ├── uart.c      # UART driver
+│   │   ├── start.S     # Boot entry point
+│   │   └── main.c      # Main bootloader code
+│   └── build/          # Build output
+├── src/                # Bootloader source code
+├── include/            # Header files
+└── tools/             # Build and development tools
+```
+
+### Building and Testing
+
+#### Prerequisites
+- LLVM/Clang toolchain
+- Make
+- Python 3.x
+- Device Tree Compiler (dtc)
+
+#### Build Instructions
+```bash
+# Set up LLVM toolchain
+export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+
+# Build the project
+cd m1n1
+make clean
+make
+```
+
+#### Testing
+1. Connect your Apple Silicon Mac to a serial console:
+   - Use a USB-C to UART adapter
+   - Connect to UART pins (TX/RX/GND)
+   - Set baud rate to 115200
+
+2. Run the bootloader:
+   ```bash
+   # Load m1n1
+   python3 tools/run_m1n1.py
+
+   # Monitor serial output
+   screen /dev/tty.usbserial* 115200
+   ```
+
+3. Expected output:
+   ```
+   === ARM64 Bootloader ===
+   UART initialized
+   ```
+
+### Technical Details
+
+#### UART Implementation
+- Base address: 0x09000000 (QEMU virt board)
+- Baud rate: 115200
+- Data format: 8N1
+- Features:
+  - Basic I/O operations
+  - Buffer management
+  - Interrupt handling
+  - Console support
+
+#### Memory Layout
+```
+0x80000000 - 0x80010000: Bootloader code
+0x80010000 - 0x80100000: Stack and heap
+0x80100000 - 0x80200000: Android boot image
+0x80200000 - 0x80300000: Kernel
+0x80300000 - 0x80400000: Ramdisk
+0x80400000 - 0x80500000: Device tree
+```
+
+### Contributing
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+### License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+## Chinese
+
+### 概述
+本项目是一个适用于 Apple Silicon Mac 的自定义 ARM64 引导程序，设计用于通过 m1n1 或 iBoot 作为预加载器来加载和启动 Android 系统。它为 ARM64 平台提供了一个最小化、可扩展且高度可移植的引导环境。
+
+### 最新开发状态
+- [x] 基础 UART 驱动实现
+- [x] 初始引导序列设置
+- [x] 内存管理框架
+- [ ] Android 启动镜像支持
+- [ ] 设备树处理
+- [ ] 内核加载
+- [ ] Ramdisk 支持
+
+### 项目结构
+```
+.
+├── m1n1/                # m1n1 预加载器集成
+│   ├── src/            # 源代码
+│   │   ├── uart.c      # UART 驱动
+│   │   ├── start.S     # 引导入口点
+│   │   └── main.c      # 主引导程序代码
+│   └── build/          # 构建输出
+├── src/                # 引导程序源代码
+├── include/            # 头文件
+└── tools/             # 构建和开发工具
+```
+
+### 构建和测试
+
+#### 前置要求
+- LLVM/Clang 工具链
+- Make
+- Python 3.x
+- 设备树编译器 (dtc)
+
+#### 构建说明
+```bash
+# 设置 LLVM 工具链
+export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+
+# 构建项目
+cd m1n1
+make clean
+make
+```
+
+#### 测试
+1. 将 Apple Silicon Mac 连接到串口控制台：
+   - 使用 USB-C 转 UART 适配器
+   - 连接 UART 引脚（TX/RX/GND）
+   - 设置波特率为 115200
+
+2. 运行引导程序：
+   ```bash
+   # 加载 m1n1
+   python3 tools/run_m1n1.py
+
+   # 监控串口输出
+   screen /dev/tty.usbserial* 115200
+   ```
+
+3. 预期输出：
+   ```
+   === ARM64 Bootloader ===
+   UART initialized
+   ```
+
+### 技术细节
+
+#### UART 实现
+- 基地址：0x09000000（QEMU virt 板）
+- 波特率：115200
+- 数据格式：8N1
+- 功能：
+  - 基本 I/O 操作
+  - 缓冲区管理
+  - 中断处理
+  - 控制台支持
+
+#### 内存布局
+```
+0x80000000 - 0x80010000: 引导程序代码
+0x80010000 - 0x80100000: 栈和堆
+0x80100000 - 0x80200000: Android 启动镜像
+0x80200000 - 0x80300000: 内核
+0x80300000 - 0x80400000: Ramdisk
+0x80400000 - 0x80500000: 设备树
+```
+
+### 贡献
+1. Fork 本仓库
+2. 创建你的特性分支
+3. 提交你的更改
+4. 推送到分支
+5. 创建 Pull Request
+
+### 许可证
+本项目采用 MIT 许可证 - 详见 LICENSE 文件。

@@ -9,8 +9,7 @@ OBJCOPY = $(CROSS_COMPILE)objcopy
 CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles -Iinclude \
          -march=armv8-a -mtune=cortex-a53 -mstrict-align \
          -fno-stack-protector -fomit-frame-pointer
-ASFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles \
-          -march=armv8-a -mtune=cortex-a53
+ASFLAGS = -march=armv8-a
 LDFLAGS = -nostdlib -T linker.ld
 
 # 源文件和目标文件
@@ -18,7 +17,20 @@ SRC_DIR = src
 INCLUDE_DIR = include
 BUILD_DIR = build
 SRCS = $(wildcard $(SRC_DIR)/*.c)
-OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+ASRCS = $(wildcard $(SRC_DIR)/*.S)
+#OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o) \
+       $(ASRCS:$(SRC_DIR)/%.S=$(BUILD_DIR)/%.o)
+OBJS = src/start.o src/uart.o src/bootloader.o src/load.o
+
+bootloader.bin: $(OBJS)
+	aarch64-elf-ld -T linker.ld -o bootloader.elf $(OBJS)
+	aarch64-elf-objcopy -O binary bootloader.elf bootloader.bin
+
+src/%.o: src/%.c
+	aarch64-elf-gcc -c $< -o $@ -Iinclude
+
+src/%.o: src/%.S
+	aarch64-elf-gcc -c $< -o $@ -Iinclude
 
 # 目标文件
 TARGET = $(BUILD_DIR)/bootloader.elf
@@ -33,6 +45,9 @@ $(BUILD_DIR):
 
 # 编译规则
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.S
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # 链接规则
